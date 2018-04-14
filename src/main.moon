@@ -161,6 +161,8 @@ love.update = (dt) ->
       remove objects, i
       i -= 1
 
+  -- TODO determine how often to spawn Cones
+
 love.draw = ->
   for object in *objects
     object\draw!
@@ -177,8 +179,5 @@ love.keypressed = (key) ->
   if key == "m"
     insert objects, Missile3032!
 
--- 3032 -> spawns randomly by projectile paths of cones impacting and then growing slowly to maturity
---  upon maturity, will fire into random arc, and fling more cones out to repeat the process
---
 -- 3017 -> person wanders on-screen, tap (repeatedly) to capture (will draw wall around him)
 --  after a time, one section of the wall will randomly disappear, allowing him to move again

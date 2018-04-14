@@ -1,3 +1,9 @@
+version = "0.1.0"
+versionChecker = love.thread.newThread "lib/itchy/check.lua"
+versionChecker\start target: "guard13007/the-foundation-falls", :version, interval: 2.5 * 60
+newVersion = love.thread.getChannel "itchy"
+latest = "unknown, checking for latest version..."
+
 math.randomseed os.time!
 import graphics from love
 import max, random, sin, cos, floor, fmod from math
@@ -155,17 +161,27 @@ class Tree3032
       graphics.draw gfx["burning-tree"], @x, @y, 0, 20/512, 20/512
 
 love.update = (dt) ->
+  if newVersion\getCount! > 0
+    data = newVersion\demand!
+    latest = data.message
+
   for i = 1, #objects
     object = objects[i]
-    unless object\update dt
-      remove objects, i
-      i -= 1
+    if object -- this is just in case how I implement missiles would break things here
+      unless object\update dt
+        remove objects, i
+        i -= 1
 
   -- TODO determine how often to spawn Cones
 
 love.draw = ->
   for object in *objects
     object\draw!
+
+  graphics.setColor 0, 0, 0, 0.75
+  graphics.rectangle "fill", 0, h - 12, w, 12
+  graphics.setColor 1, 1, 1, 1
+  graphics.print "Version: #{version} Latest version: #{latest}"
 
 love.keypressed = (key) ->
   if key == "escape"

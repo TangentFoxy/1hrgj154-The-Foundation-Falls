@@ -1,4 +1,4 @@
-version = "0.1.1"
+version = "0.2.0"
 versionChecker = love.thread.newThread "lib/itchy/check.lua"
 versionChecker\start target: "guard13007/the-foundation-falls", :version, interval: 2.5 * 60
 newVersion = love.thread.getChannel "itchy"
@@ -145,8 +145,11 @@ class Tree3032
 
     @time = 255
     @speed = 8 + random! * 4
+    @destroyed = false
 
   update: (dt) =>
+    if @destroyed
+      return false
     @time -= dt * @speed
     if @time <= 0
       insert objects, Missile3032(@x, @y)
@@ -171,15 +174,13 @@ class Missile
       error "Missiles REQUIRE a target!"
 
     @target = target
-    -- @speed = 15 + random! * 5
-    @speed = 0.5
+    @speed = 0.5 + random! * 0.25
 
   update: (dt) =>
-    print "missile updated"
     dy, dx = @target.y - @y, @target.x - @x
     dist = math.sqrt dx*dx + dy*dy
     if dist <= @speed
-      -- TODO we have hit it! need to register that somehow
+      @target.destroyed = true -- lazy-ass way to register a hit :/
       return false
     r = math.atan2 dy, dx
     @x += @speed * cos r
@@ -226,6 +227,7 @@ class MissileLauncher
     graphics.setColor 0, 0, 1, 0.1
     graphics.circle "fill", @x, @y, @r
 
+timer = 5
 love.update = (dt) ->
   if newVersion\getCount! > 0
     data = newVersion\demand!
@@ -238,7 +240,11 @@ love.update = (dt) ->
         remove objects, i
         i -= 1
 
-  -- TODO determine how often to spawn Cones
+  -- lazy cone-spwaning
+  timer += dt
+  if timer >= 3
+    insert objects, Cone3032!
+    timer -= 3
 
 love.draw = ->
   for object in *objects

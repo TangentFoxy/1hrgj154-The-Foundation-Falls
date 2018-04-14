@@ -1,4 +1,4 @@
-version = "0.1.0"
+version = "0.1.1"
 versionChecker = love.thread.newThread "lib/itchy/check.lua"
 versionChecker\start target: "guard13007/the-foundation-falls", :version, interval: 2.5 * 60
 newVersion = love.thread.getChannel "itchy"
@@ -6,7 +6,7 @@ latest = "unknown, checking for latest version..."
 
 math.randomseed os.time!
 import graphics from love
-import max, random, sin, cos, floor, fmod from math
+import max, min, random, sin, cos, floor, fmod from math
 import insert, remove from table
 
 w, h = graphics.getWidth!, graphics.getHeight!
@@ -109,7 +109,7 @@ class Missile3032
     path[3] = (path[1] + path[5]) / 2 + arcOffset * cos r
     path[4] = (path[2] + path[6]) / 2 + arcOffset * sin r
     insert objects, Cone3032(path)
-    @green = max 0.9, @green + 0.25
+    @green = min 0.9, @green + 0.25
 
   update: (dt) =>
     @time += dt * @speed
@@ -128,7 +128,7 @@ class Missile3032
     graphics.setColor 0.8, 0.6, 0.6, 0.75
     graphics.line(@path)
 
-    graphics.setColor 1, 0, 0, 1
+    graphics.setColor 1, @green, 0, 1
     x, y = @path[@location], @path[@location + 1]
     x2, y2 = @path[@location + 2], @path[@location + 3]
     if x2 and y2
@@ -160,6 +160,72 @@ class Tree3032
     else
       graphics.draw gfx["burning-tree"], @x, @y, 0, 20/512, 20/512
 
+class Missile
+  new: (x, y, target) =>
+    if x and y
+      @x, @y = x, y
+    else
+      @x, @y = 5 + random! * (w - 10), 5 + random! * (h - 10)
+
+    unless target
+      error "Missiles REQUIRE a target!"
+
+    @target = target
+    -- @speed = 15 + random! * 5
+    @speed = 0.5
+
+  update: (dt) =>
+    print "missile updated"
+    dy, dx = @target.y - @y, @target.x - @x
+    dist = math.sqrt dx*dx + dy*dy
+    if dist <= @speed
+      -- TODO we have hit it! need to register that somehow
+      return false
+    r = math.atan2 dy, dx
+    @x += @speed * cos r
+    @y += @speed * sin r
+    return true
+
+  draw: =>
+    graphics.setColor 1, 0.5, 0, 1
+    graphics.circle "fill", @x, @y, 2 -- really should be a better icon
+
+class MissileLauncher
+  new: (x, y) =>
+    if x and y
+      @x, @y = x, y
+    else
+      @x, @y = 20 + random! * (w - 40), 20 + random! * (h - 40)
+
+    @r = 100 + random! * 25
+    @loaded = 0
+    @loadTime = 5
+
+  update: (dt) =>
+    if @loaded < @loadTime
+      @loaded = min @loadTime, @loaded + dt
+    if @loaded >= @loadTime
+      -- until I refactor this later on, we can only launch at trees
+      -- (because they have defined x/y and are not moving, easy)
+      for object in *objects
+        if object.__class.__name == "Tree3032"
+          dx, dy = @x - object.x, @y - object.y
+          if @r >= math.sqrt dx*dx + dy*dy
+            insert objects, Missile(@x, @y, object)
+            @loaded = 0
+            return true
+    return true
+
+  draw: =>
+    graphics.setColor 0, 0.8, 0, 1
+    graphics.draw gfx["missile-launcher"], @x - 11, @y - 11, 0, 22/512, 22/512
+    graphics.setColor 1, 1, 1, 0.8
+    graphics.arc "line", @x, @y, 24, 0, tau * (@loaded / @loadTime)
+
+    -- move this above the launcher icon after fixing all PNGs
+    graphics.setColor 0, 0, 1, 0.1
+    graphics.circle "fill", @x, @y, @r
+
 love.update = (dt) ->
   if newVersion\getCount! > 0
     data = newVersion\demand!
@@ -179,9 +245,9 @@ love.draw = ->
     object\draw!
 
   graphics.setColor 0, 0, 0, 0.75
-  graphics.rectangle "fill", 0, h - 12, w, 12
+  graphics.rectangle "fill", 0, h - 14, w, 14
   graphics.setColor 1, 1, 1, 1
-  graphics.print "Version: #{version} Latest version: #{latest}"
+  graphics.print "Version: #{version} Latest version: #{latest}", 0, h - 14
 
 love.keypressed = (key) ->
   if key == "escape"
@@ -194,6 +260,16 @@ love.keypressed = (key) ->
     insert objects, Tree3032!
   if key == "m"
     insert objects, Missile3032!
+  if key == "l"
+    insert objects, MissileLauncher!
+  -- if key == ","
+  --   insert objects, Missile(nil, nil, objects[random(#objects)])
+
+-- love.mousepressed = (x, y, button) ->
+--   print x, y, button
+love.mousereleased = (x, y, button) ->
+  if button == 1
+    insert objects, MissileLauncher(x, y)
 
 -- 3017 -> person wanders on-screen, tap (repeatedly) to capture (will draw wall around him)
 --  after a time, one section of the wall will randomly disappear, allowing him to move again
